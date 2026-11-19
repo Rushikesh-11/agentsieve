@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Evaluation-driven platform for testing, diagnosing, experimenting with, and safely promoting improvements to AI agents."
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0,<3.0",
+]
 license = "MIT"
 authors = [
     { name = "Rushikesh Reddy" }
