@@ -1,9 +1,16 @@
+"""LangGraph workflow definitions for the AgentSieve agent runtime."""
+
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
+
+from agentsieve.agents.tools import calculator
+
+_TOOLS = (calculator,)
 
 
 class AgentState(TypedDict):
@@ -12,11 +19,11 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def get_model() -> ChatGoogleGenerativeAI:
-    """Create the configured Gemini chat model."""
+def get_model():
+    """Create the configured chat model with AgentSieve tools bound."""
     return ChatGoogleGenerativeAI(
         model="gemini-3.6-flash",
-    )
+    ).bind_tools(_TOOLS)
 
 
 def agent_node(state: AgentState) -> dict[str, list[AIMessage]]:
@@ -29,12 +36,23 @@ def agent_node(state: AgentState) -> dict[str, list[AIMessage]]:
 
 
 def build_agent_graph():
-    """Build and compile the AgentSieve LangGraph agent workflow."""
+    """Build and compile the AgentSieve tool-using agent workflow."""
     graph = StateGraph(AgentState)
 
     graph.add_node("agent", agent_node)
+    graph.add_node("tools", ToolNode(_TOOLS))
 
     graph.add_edge(START, "agent")
-    graph.add_edge("agent", END)
+
+    graph.add_conditional_edges(
+        "agent",
+        tools_condition,
+        {
+            "tools": "tools",
+            END: END,
+        },
+    )
+
+    graph.add_edge("tools", "agent")
 
     return graph.compile()
