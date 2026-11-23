@@ -7,10 +7,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
+from opentelemetry import trace
 
 from agentsieve.agents.tools import calculator
 
 _TOOLS = (calculator,)
+tracer = trace.get_tracer("agentsieve.agent")
 
 
 class AgentState(TypedDict):
@@ -28,11 +30,13 @@ def get_model():
 
 def agent_node(state: AgentState) -> dict[str, list[AIMessage]]:
     """Invoke the configured chat model using the current conversation state."""
-    response = get_model().invoke(state["messages"])
+    with tracer.start_as_current_span("agent") as span:
+        span.set_attribute("agent.node", "agent")
+        span.set_attribute("agent.message_count", len(state["messages"]))
 
-    return {
-        "messages": [response],
-    }
+        response = get_model().invoke(state["messages"])
+
+        return {"messages": [response]}
 
 
 def build_agent_graph():
