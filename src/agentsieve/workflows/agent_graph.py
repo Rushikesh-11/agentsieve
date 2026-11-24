@@ -10,6 +10,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from opentelemetry import trace
 
 from agentsieve.agents.tools import calculator
+from agentsieve.telemetry.tool_tracer import trace_tool_call
 
 _TOOLS = (calculator,)
 tracer = trace.get_tracer("agentsieve.agent")
@@ -44,7 +45,13 @@ def build_agent_graph():
     graph = StateGraph(AgentState)
 
     graph.add_node("agent", agent_node)
-    graph.add_node("tools", ToolNode(_TOOLS))
+    graph.add_node(
+        "tools",
+        ToolNode(
+            _TOOLS,
+            wrap_tool_call=trace_tool_call,
+        ),
+    )
 
     graph.add_edge(START, "agent")
 
