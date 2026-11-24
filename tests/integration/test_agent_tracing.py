@@ -4,14 +4,15 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableLambda
 
 from agentsieve.telemetry.in_memory_collector import InMemoryTraceCollector
-from agentsieve.telemetry.tracer import configure_tracing
 from agentsieve.workflows.agent_graph import build_agent_graph
 
 
-def test_agent_execution_creates_trace_record(monkeypatch) -> None:
+def test_agent_execution_creates_trace_record(
+    monkeypatch,
+    trace_collector: InMemoryTraceCollector,
+) -> None:
     """Agent execution should produce a normalized trace record."""
-    collector = InMemoryTraceCollector()
-    configure_tracing(collector)
+    collector = trace_collector
 
     fake_model = RunnableLambda(lambda _: AIMessage(content="Hello from the test agent."))
 
